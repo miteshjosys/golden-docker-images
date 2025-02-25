@@ -5,13 +5,13 @@ on:
     paths:
       - "node/22/bookworm-slim/Dockerfile"
       - "node/22/bookworm-slim/entrypoint.sh"
-      - ".github/workflows/node-22--bookworm-slim.yml"
+      - ".github/workflows/node--22--bookworm-slim.yml"
 
   pull_request:
     paths:
       - "node/22/bookworm-slim/Dockerfile"
       - "node/22/bookworm-slim/entrypoint.sh"
-      - ".github/workflows/node-22--bookworm-slim.yml"
+      - ".github/workflows/node--22--bookworm-slim.yml"
 
 jobs:
   build:
