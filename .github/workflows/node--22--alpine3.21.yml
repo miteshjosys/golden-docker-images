@@ -1,0 +1,63 @@
+name: build-test
+
+on:
+  push:
+    paths:
+      - "node/22/alpine3.21/Dockerfile"
+      - "node/22/alpine3.21/entrypoint.sh"
+      - ".github/workflows/node--22--alpine3.21.yml"
+
+  pull_request:
+    paths:
+      - "node/22/alpine3.21/Dockerfile"
+      - "node/22/alpine3.21/entrypoint.sh"
+      - ".github/workflows/node--22--alpine3.21.yml"
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # - name: Set up Docker Buildx
+      #   id: docker_buildx_setup
+      #   uses: docker/setup-buildx-action@v2
+      
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          load: true
+          context: .
+          file: ./node/22/alpine3.21/Dockerfile
+          tags: node:22-alpine3.21
+
+      - name: Test for node version
+        run: |
+          image_node_version=$(docker run --rm node:22-alpine3.21 node --print "process.versions.node")
+          echo "Expected: \"22.14.0\", Got: \"${image_node_version}\""
+          [ "${image_node_version}" == "22.14.0" ]
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+        
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: node
+          IMAGE_TAG: 22-alpine3.21
+        run: |
+          docker tag node:22-alpine3.21 $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
